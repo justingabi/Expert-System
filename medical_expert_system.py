@@ -216,7 +216,7 @@ class Greetings(KnowledgeEngine):
 
 		
 		probability = max_count / len(symptom_map[max_disease])
-        self.declare(Fact(disease=max_disease, probability=probability))
+        	self.declare(Fact(disease=max_disease, probability=probability))
 		
 	@Rule(Fact(action='find_disease'), Fact(disease=MATCH.disease, probability=MATCH.probability), salience=-998)	
 	def disease(self, disease, probability):
