@@ -213,9 +213,23 @@ class Greetings(KnowledgeEngine):
 			if count > max_count:
 				max_count = count
 				max_disease = val
-		if_not_matched(max_disease)
 
-
+		
+		probability = max_count / len(symptom_map[max_disease])
+        	self.declare(Fact(disease=max_disease, probability=probability))
+		
+	@Rule(Fact(action='find_disease'), Fact(disease=MATCH.disease, probability=MATCH.probability), salience=-998)	
+	def disease(self, disease, probability):
+	        print("")
+	        id_disease = disease
+	        disease_details = get_details(id_disease)
+	        treatments = get_treatments(id_disease)
+	        print(f"\nThe most probable disease that you have is {id_disease} with a probability of {probability:.2%}\n")
+	        print("A short description of the disease is given below:\n")
+	        print(disease_details + "\n")
+	        print("The common medications and procedures suggested by other real doctors are:\n")
+	        print(treatments + "\n")	
+	
 if __name__ == "__main__":
 	preprocess()
 	engine = Greetings()
