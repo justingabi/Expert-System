@@ -56,6 +56,9 @@ def if_not_matched(disease):
 
 # @my_decorator is just a way of saying just_some_function = my_decorator(just_some_function)
 #def identify_disease(headache, back_pain, chest_pain, cough, fainting, sore_throat, fatigue, restlessness,low_body_temp ,fever,sunken_eyes):
+
+class Probability(Fact):
+    pass
 class Greetings(KnowledgeEngine):
 	@DefFacts()
 	def _initial_action(self):
@@ -172,17 +175,21 @@ class Greetings(KnowledgeEngine):
 		self.declare(Fact(disease="Hypothermia"))
 
 	@Rule(Fact(action='find_disease'),Fact(disease=MATCH.disease),salience = -998)
-	def disease(self, disease):
+	def disease(self, disease, probability):
 		print("")
 		id_disease = disease
 		disease_details = get_details(id_disease)
 		treatments = get_treatments(id_disease)
 		print("")
-		print("The most probable disease that you have is %s\n" %(id_disease))
-		print("A short description of the disease is given below :\n")
-		print(disease_details+"\n")
-		print("The common medications and procedures suggested by other real doctors are: \n")
-		print(treatments+"\n")
+		print("The most probable disease that you have is %s with a probability of %d%%\n" % (id_disease, probability))
+		# print("A short description of the disease is given below :\n")
+		# print(disease_details+"\n")
+		# print("The common medications and procedures suggested by other real doctors are: \n")
+		# print(treatments+"\n")
+
+	print("Symptom Map before loop:")
+	for key, value in symptom_map.items():
+		print(f"{key}: {value}")
 
 	@Rule(Fact(action='find_disease'),
 		  Fact(headache=MATCH.headache),
@@ -198,39 +205,50 @@ class Greetings(KnowledgeEngine):
 		  Fact(sunken_eyes=MATCH.sunken_eyes),
 		  Fact(nausea=MATCH.nausea),
 		  Fact(blurred_vision=MATCH.blurred_vision),NOT(Fact(disease=MATCH.disease)),salience = -999)
+	
 
-	def not_matched(self,headache, back_pain, chest_pain, cough, fainting, sore_throat, fatigue, restlessness,low_body_temp ,fever ,sunken_eyes ,nausea ,blurred_vision):
+	def not_matched(self, headache, back_pain, chest_pain, cough, fainting, sore_throat, fatigue, restlessness,
+                 low_body_temp, fever, sunken_eyes, nausea, blurred_vision):
 		print("\nDid not find any disease that matches your exact symptoms")
-		lis = [headache, back_pain, chest_pain, cough, fainting, sore_throat, fatigue, restlessness,low_body_temp ,fever ,sunken_eyes ,nausea ,blurred_vision]
+		lis = [headache, back_pain, chest_pain, cough, fainting, sore_throat, fatigue, restlessness, low_body_temp, fever,
+			sunken_eyes, nausea, blurred_vision]
 		max_count = 0
 		max_disease = ""
-		for key,val in symptom_map.items():
+		top_diseases = []
+
+		for disease in diseases_list:
 			count = 0
-			temp_list = eval(key)
-			for j in range(0,len(lis)):
-				if(temp_list[j] == lis[j] and lis[j] == "yes"):
-					count = count + 1
+			symptoms = diseases_symptoms[diseases_list.index(disease)]
+			for j in range(len(lis)):
+				if lis[j] == symptoms[j] == "yes":
+					count += 1
+
 			if count > max_count:
 				max_count = count
-				max_disease = val
+				max_disease = disease
 
-		probability = max_count / len(symptom_map[max_disease])
-		self.declare(Fact(disease=max_disease, probability=probability))
-		
-	@Rule(Fact(action='find_disease'), 
-        Fact(disease=MATCH.disease, probability=MATCH.probability), 
-        salience=998)
+			top_diseases.append((disease, count))
 
-	def disease(self, disease, probability):
-		print("")
-		id_disease = disease
-		disease_details = get_details(id_disease)
-		treatments = get_treatments(id_disease)
-		print(f"\nThe most probable disease that you have is {id_disease} with a probability of {probability:.2%}\n")
-		print("A short description of the disease is given below:\n")
-		print(disease_details + "\n")
-		print("The common medications and procedures suggested by other real doctors are:\n")
-		print(treatments + "\n")
+		if not max_disease:
+			print("No disease found.")
+			return
+
+		# Calculate probability for the most probable disease
+		probability = (max_count / len(symptoms)) * 100
+		self.declare(Probability(disease=max_disease, probability=probability))
+
+		print(f"The most probable disease is {max_disease} with a probability of {probability:.2f}%")
+
+		# Sort top diseases by count in descending order
+		top_diseases.sort(key=lambda x: x[1], reverse=True)
+
+		# Print probabilities for the top three diseases (excluding the most probable one)
+		print("\nProbabilities for other top diseases:")
+		for i in range(1, min(4, len(top_diseases))):
+			disease, count = top_diseases[i]
+			probability = (count / len(symptoms)) * 100
+			print(f"{disease}: {probability: .2f}%")
+
 	
 if __name__ == "__main__":
 	preprocess()
